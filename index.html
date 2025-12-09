@@ -1,76 +1,102 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>File Upload Demo</title>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <title>檔案上傳（限制 200 KB）</title>
 
-  <script>
-    UPLOADCARE_PUBLIC_KEY = "e4da8b17a138c42b9081";
-  </script>
-  <script src="https://ucarecdn.com/libs/widget/3.x/uploadcare.full.min.js"></script>
+    <!-- File Uploader 的樣式 -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@uploadcare/file-uploader@v1/web/uc-file-uploader-regular.min.css"
+    />
 
-  <style>
-    body {
-      font-family: Arial;
-      margin: 40px;
-    }
-    #error {
-      color: red;
-      margin-top: 10px;
-      display: none;
-    }
-    #result {
-      margin-top: 20px;
-      padding: 10px;
-      border: 1px solid #ccc;
-      display: none;
-    }
-  </style>
-</head>
+    <!-- File Uploader 元件本體 -->
+    <script type="module">
+      import * as UC from "https://cdn.jsdelivr.net/npm/@uploadcare/file-uploader@v1/web/uc-file-uploader-regular.min.js";
+      UC.defineComponents(UC);
+    </script>
 
-<body>
+    <style>
+      body {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        padding: 40px;
+      }
+      #result {
+        margin-top: 20px;
+        font-size: 14px;
+        word-break: break-all;
+      }
+      .error {
+        color: #c00;
+      }
+      .ok {
+        color: #060;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>檔案上傳 Demo（每個檔案 &lt; 200 KB）</h1>
 
-  <h2>限制 200 KB 檔案上傳（完整阻擋版）</h2>
+    <!-- 設定區：這裡放限制條件 -->
+    <uc-config
+      ctx-name="my-uploader"
+      pubkey="你的_public_key_放這裡"
+      max-local-file-size-bytes="204800"  <!-- 200 KB ≈ 200 * 1024 -->
+      multiple="false"
+    >
+    </uc-config>
 
-  <!-- Uploadcare widget -->
-  <input
-    type="hidden"
-    role="uploadcare-uploader"
-    data-clearable="true"
-    data-multiple="false"
-  />
+    <!-- 事件會從這個 context provider 發出 -->
+    <uc-upload-ctx-provider ctx-name="my-uploader"></uc-upload-ctx-provider>
 
-  <div id="error">❌ 檔案太大，必須小於 200 KB！</div>
+    <!-- 實際的 Uploader UI -->
+    <uc-file-uploader-regular ctx-name="my-uploader"></uc-file-uploader-regular>
 
-  <div id="result">
-    <h3>上傳成功！</h3>
-    <p>檔案 URL：</p>
-    <a id="fileUrl" href="#" target="_blank"></a>
-  </div>
+    <!-- 顯示結果 -->
+    <div id="result"></div>
 
-  <script>
-    const MAX_SIZE = 200 * 1024; // 200 KB
-    const widget = uploadcare.Widget('[role=uploadcare-uploader]');
+    <script>
+      const ctx = document.querySelector("uc-upload-ctx-provider");
+      const resultDiv = document.getElementById("result");
 
-    widget.onChange(file => {
-      if (!file) return;
+      // 成功上傳事件
+      ctx.addEventListener("file-upload-success", (e) => {
+        const entry = e.detail; // OutputFileEntry
+        resultDiv.innerHTML =
+          `<div class="ok">上傳成功：${entry.name} (${Math.round(
+            entry.size / 1024
+          )} KB)<br>CDN URL：${entry.cdnUrl}</div>`;
+      });
 
-      file.done(fileInfo => {
-        if (fileInfo.size > MAX_SIZE) {
-          document.getElementById("error").style.display = "block";
-          widget.value(null);   // 清除 widget
+      // 上傳失敗事件（包括超過檔案大小）
+      ctx.addEventListener("file-upload-failed", (e) => {
+        const entry = e.detail;
+        const sizeKB = Math.round(entry.size / 1024);
+
+        // 檔案大小錯誤會出現在 entry.errors 裡
+        const sizeError = entry.errors?.find(
+          (err) => err.type === "FILE_SIZE_EXCEEDED"
+        );
+
+        if (sizeError) {
+          resultDiv.innerHTML = `
+            <div class="error">
+              檔案太大了：${entry.name} (${sizeKB} KB)<br>
+              限制為 &lt; 200 KB，已經在本機端被阻擋，沒有上傳到伺服器。
+            </div>
+          `;
         } else {
-          document.getElementById("error").style.display = "none";
+          resultDiv.innerHTML = `
+            <div class="error">
+              上傳失敗：${entry.name || "未知檔案"}<br>
+              錯誤類型：${
+                entry.errors?.map((e) => e.type).join(", ") || "未知"
+              }
+            </div>
+          `;
         }
       });
-    });
-
-    widget.onUploadComplete(info => {
-      document.getElementById("result").style.display = "block";
-      document.getElementById("fileUrl").href = info.cdnUrl;
-      document.getElementById("fileUrl").textContent = info.cdnUrl;
-    });
-  </script>
-
-</body>
+    </script>
+  </body>
 </html>
