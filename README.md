@@ -1,1 +1,3 @@
-用ChatGPT寫的上傳檔案工具，利用UploadCare Widget，希望可以做到完全無後端。
+用ChatGPT寫的上傳檔案工具，原本想利用ZeroUpload做上傳小工具，但發現還是需要server。
+我不會串聯server，因此請ChatGPT推薦完全無後端的工具。
+ChatGPT建議使用UploadCare Widget，並且把code寫好給我了www
