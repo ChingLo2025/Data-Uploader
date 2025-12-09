@@ -5,7 +5,7 @@
   <title>File Upload Demo</title>
 
   <script>
-    UPLOADCARE_PUBLIC_KEY = "e4da8b17a138c42b9081";
+    UPLOADCARE_PUBLIC_KEY = "<YOUR_PUBLIC_KEY>";
   </script>
   <script src="https://ucarecdn.com/libs/widget/3.x/uploadcare.full.min.js"></script>
 
@@ -13,6 +13,11 @@
     body {
       font-family: Arial;
       margin: 40px;
+    }
+    #error {
+      color: red;
+      margin-top: 10px;
+      display: none;
     }
     #result {
       margin-top: 20px;
@@ -25,16 +30,17 @@
 
 <body>
 
-  <h2>免後端檔案上傳示範（限制 200 KB）</h2>
+  <h2>限制 200 KB 檔案上傳（完整阻擋版）</h2>
 
-  <!-- 限制檔案大小：最大 200 KB -->
+  <!-- Uploadcare widget -->
   <input
     type="hidden"
     role="uploadcare-uploader"
     data-clearable="true"
     data-multiple="false"
-    data-max-file-size="204800"
   />
+
+  <div id="error">❌ 檔案太大，必須小於 200 KB！</div>
 
   <div id="result">
     <h3>上傳成功！</h3>
@@ -43,7 +49,21 @@
   </div>
 
   <script>
+    const MAX_SIZE = 200 * 1024; // 200 KB
     const widget = uploadcare.Widget('[role=uploadcare-uploader]');
+
+    widget.onChange(file => {
+      if (!file) return;
+
+      file.done(fileInfo => {
+        if (fileInfo.size > MAX_SIZE) {
+          document.getElementById("error").style.display = "block";
+          widget.value(null);   // 清除 widget
+        } else {
+          document.getElementById("error").style.display = "none";
+        }
+      });
+    });
 
     widget.onUploadComplete(info => {
       document.getElementById("result").style.display = "block";
